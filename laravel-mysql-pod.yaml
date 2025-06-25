@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      containers:
+        - name: laravel-web
+          image: php:8.2-fpm-alpine
+          ports:
+            - containerPort: 8080
+            - containerPort: 22
+          volumeMounts:
+            - name: laravel-storage
+              mountPath: /var/www
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - |
+              apk add --no-cache git &&
+              rm -rf /var/www/laravel-app &&
+              git clone https://github.com/HongBunpheng/Devops_Final_Exam.git /var/www/laravel-app &&
+              cd /var/www/laravel-app &&
+              php -S 0.0.0.0:8080 -t public
+
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: laravel-storage
+              mountPath: /usr/share/nginx/html
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: Hello@123
+            - name: MYSQL_DATABASE
+              value: hongbunpheng-db
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+
+      volumes:
+        - name: laravel-storage
+          emptyDir: {}
+
+        - name: mysql-data
+          emptyDir: {}
+
+        - name: nginx-conf
+          configMap:
+            name: nginx-config
